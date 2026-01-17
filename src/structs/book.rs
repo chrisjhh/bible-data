@@ -25,6 +25,7 @@ impl OutOfRangeError {
 /// [from_index] or from a book number in the range `1..=66` with [from_book_number]
 /// or parsed from an abbreviation with [parse_abbrev] or from the full name with
 /// [parse_name]. The method [parse] will try both.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
 pub enum BibleBook {
@@ -96,6 +97,7 @@ pub enum BibleBook {
     Revelation,
 }
 
+#[allow(dead_code)]
 impl BibleBook {
     pub fn book_number(&self) -> u32 {
         *self as u32
