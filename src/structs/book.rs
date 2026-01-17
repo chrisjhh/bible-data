@@ -123,7 +123,7 @@ impl BibleBook {
             // 1) We have defined the enum BibleBook with repr(u8) so we know it is a u8 under the hood
             // 2) We are checking it is within the correct limits in this match statement
             // Reasons to use it:
-            // An exhaustive match statement for all 66 books would be terious and *more* error prone
+            // An exhaustive match statement for all 66 books would be tedious and *more* error prone
             1..=66 => unsafe { Ok(std::mem::transmute::<u8, BibleBook>(number as u8)) },
             _ => Err(OutOfRangeError::new(String::from(format!(
                 "{}. book_number should be in range 1..=66",
