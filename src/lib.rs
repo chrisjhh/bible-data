@@ -363,3 +363,5 @@ mod tests {
         assert!(book_index.is_none());
     }
 }
+
+mod structs;
