@@ -10,4 +10,4 @@
 //! These do not need to be under an optional package. Just use them if you need them
 //! and ignore them if you don't. Let the linker do the work to include what is needed in
 //! the final binaries.
-mod book;
+pub mod book;

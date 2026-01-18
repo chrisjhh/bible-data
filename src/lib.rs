@@ -365,3 +365,5 @@ mod tests {
 }
 
 mod structs;
+pub use structs::book;
+pub use structs::book::BibleBook;

@@ -99,22 +99,67 @@ pub enum BibleBook {
 
 #[allow(dead_code)]
 impl BibleBook {
+    /// Return the book number for this book as it occurs in the Bible.
+    /// 1 = Genesis. 66 = Revelation.
+    ///
+    /// # Example
+    /// ```rust
+    /// use bible_data::BibleBook;
+    /// assert_eq!(BibleBook::Genesis.book_number(), 1);
+    /// ```
     pub fn book_number(&self) -> u32 {
         *self as u32
     }
 
-    pub fn index(&self) -> u32 {
-        self.book_number() - 1
+    /// Return the zero-based index for accessing arrays
+    /// 0 = Genesis. 65 = Revelation
+    ///
+    /// # Example
+    /// ```rust
+    /// use bible_data::BibleBook;
+    /// assert_eq!(BibleBook::Genesis.index(), 0);
+    /// ```
+    pub fn index(&self) -> usize {
+        self.book_number() as usize - 1
     }
 
+    /// Return the name of this book
+    /// eg. "Genesis" or "Revelation"
+    ///
+    /// # Example
+    /// ```rust
+    /// use bible_data::BibleBook;
+    /// assert_eq!(BibleBook::Genesis.name(), "Genesis");
+    /// ```
     pub fn name(&self) -> &str {
         BOOK_NAMES[self.index() as usize]
     }
 
+    /// Return the abbreviation for this book
+    /// eg. "Ge" or "Rev"
+    ///
+    /// # Example
+    /// ```rust
+    /// use bible_data::BibleBook;
+    /// assert_eq!(BibleBook::Genesis.abbrev(), "Ge");
+    /// ```
     pub fn abbrev(&self) -> &str {
         BOOK_ABBREVS[self.index() as usize]
     }
 
+    /// Construct a BibleBook from its book number.
+    /// 1 = Genesis. 66 = Revelation.
+    ///
+    /// Returns Ok([BibleBook]) or Err([OutOfRangeError])
+    ///
+    /// # Example
+    /// ```rust
+    /// use bible_data::BibleBook;
+    /// assert_eq!(BibleBook::from_book_number(1).unwrap(), BibleBook::Genesis);
+    /// assert_eq!(BibleBook::from_book_number(66).unwrap(), BibleBook::Revelation);
+    /// assert!(BibleBook::from_book_number(0).is_err());
+    /// assert!(BibleBook::from_book_number(67).is_err());
+    /// ```
     pub fn from_book_number(number: u32) -> Result<Self, OutOfRangeError> {
         match number {
             0 => Err(OutOfRangeError::new(String::from(
@@ -134,6 +179,19 @@ impl BibleBook {
         }
     }
 
+    /// Construct a BibleBook from its zero-based index.
+    /// 0 = Genesis. 65 = Revelation.
+    ///
+    /// Returns Ok([BibleBook]) or Err([OutOfRangeError])
+    ///
+    /// # Example
+    /// ```rust
+    /// use bible_data::BibleBook;
+    /// assert_eq!(BibleBook::from_index(1).unwrap(), BibleBook::Exodus);
+    /// assert!(BibleBook::from_index(66).is_err());
+    /// assert_eq!(BibleBook::from_index(0).unwrap(), BibleBook::Genesis);
+    /// assert_eq!(BibleBook::from_index(65).unwrap(), BibleBook::Revelation);
+    /// ```
     pub fn from_index(index: u32) -> Result<Self, OutOfRangeError> {
         match index {
             66 => Err(OutOfRangeError::new(String::from(
@@ -147,10 +205,92 @@ impl BibleBook {
         }
     }
 
+    /// Construct a BibleBook instance by parsing its abbreviation.
+    ///
+    /// Returns an Option that will be None if the abbreviation does not match
+    /// that of any known Bible book.
+    ///
+    /// # Example
+    /// ```rust
+    /// use bible_data::BibleBook;
+    /// assert_eq!(BibleBook::parse_abbrev("Ge").unwrap(), BibleBook::Genesis);
+    /// assert!(BibleBook::parse_abbrev("random text").is_none());
+    /// ```
     pub fn parse_abbrev(abbrev: &str) -> Option<Self> {
         match parse_book_abbrev(abbrev) {
             None => None,
             Some(index) => Self::from_index(index as u32).ok(),
+        }
+    }
+
+    /// Construct a BibleBook instance by parsing its name.
+    ///
+    /// Returns an Option that will be None if the name does not match
+    /// that of any known Bible book.
+    ///
+    /// # Example
+    /// ```rust
+    /// use bible_data::BibleBook;
+    /// assert_eq!(BibleBook::parse_name("Genesis").unwrap(), BibleBook::Genesis);
+    /// assert!(BibleBook::parse_abbrev("random text").is_none());
+    /// ```
+    pub fn parse_name(name: &str) -> Option<Self> {
+        match BOOK_NAMES.iter().enumerate().find(|item| *item.1 == name) {
+            None => None,
+            Some(item) => Self::from_index(item.0 as u32).ok(),
+        }
+    }
+
+    /// Return an iterator over all the books of the Bible as BibleBook instances
+    ///
+    /// # Example
+    /// ```rust
+    /// use bible_data::BibleBook;
+    /// let mut it = BibleBook::iter();
+    /// assert_eq!(it.next(), Some(BibleBook::Genesis));
+    /// assert_eq!(it.next(), Some(BibleBook::Exodus));
+    /// let mut it = it.skip(37);
+    /// assert_eq!(it.next(), Some(BibleBook::Matthew));
+    /// let mut it = it.skip(25);
+    /// assert_eq!(it.next(), Some(BibleBook::Revelation));
+    /// assert!(it.next().is_none());
+    /// ```
+    pub fn iter() -> impl Iterator<Item = BibleBook> {
+        (1..=66).map(|number| Self::from_book_number(number).unwrap())
+    }
+
+    /// Return if this book is part of the New Testament
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use bible_data::BibleBook;
+    /// assert_eq!(BibleBook::Genesis.is_new_testament(), false);
+    /// assert_eq!(BibleBook::Revelation.is_new_testament(), true);
+    /// assert_eq!(BibleBook::iter().filter(|b| b.is_new_testament()).count(), 27);
+    /// ```
+    pub fn is_new_testament(&self) -> bool {
+        match self.book_number() {
+            40..=66 => true,
+            _ => false,
+        }
+    }
+
+    /// Return if this book is part of the Old Testament
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use bible_data::BibleBook;
+    /// assert_eq!(BibleBook::Genesis.is_old_testament(), true);
+    /// assert_eq!(BibleBook::Revelation.is_old_testament(), false);
+    /// assert_eq!(BibleBook::iter().filter(|b| b.is_old_testament()).count(), 39);
+    /// assert_eq!(BibleBook::iter().filter(|b| b.is_old_testament()).last().unwrap(), BibleBook::Malachi);
+    /// ```
+    pub fn is_old_testament(&self) -> bool {
+        match self.book_number() {
+            1..=39 => true,
+            _ => false,
         }
     }
 }
@@ -223,5 +363,110 @@ mod tests {
             BibleBook::Revelation
         );
         assert!(BibleBook::parse_abbrev("1Macc").is_none());
+    }
+
+    #[test]
+    fn test_parse_name() {
+        assert_eq!(
+            BibleBook::parse_name("Genesis").unwrap(),
+            BibleBook::Genesis
+        );
+        assert_eq!(
+            BibleBook::parse_name("Malachi").unwrap(),
+            BibleBook::Malachi
+        );
+        assert_eq!(
+            BibleBook::parse_name("Matthew").unwrap(),
+            BibleBook::Matthew
+        );
+        assert_eq!(
+            BibleBook::parse_name("Matthew").unwrap(),
+            BibleBook::Matthew
+        );
+        assert_eq!(
+            BibleBook::parse_name("Revelation").unwrap(),
+            BibleBook::Revelation
+        );
+        assert!(BibleBook::parse_name("1 Maccabees").is_none());
+    }
+
+    #[test]
+    fn test_iter() {
+        let mut it = BibleBook::iter();
+        assert_eq!(it.next(), Some(BibleBook::Genesis));
+        assert_eq!(it.next(), Some(BibleBook::Exodus));
+        let mut it = it.skip(37);
+        assert_eq!(it.next(), Some(BibleBook::Matthew));
+        let mut it = it.skip(25);
+        assert_eq!(it.next(), Some(BibleBook::Revelation));
+        assert!(it.next().is_none());
+        assert_eq!(BibleBook::iter().count(), 66);
+        for (i, book) in BibleBook::iter().enumerate() {
+            assert_eq!(book.index(), i);
+            assert!((1..=66).contains(&book.book_number()))
+        }
+    }
+
+    #[test]
+    fn test_is_new_testament() {
+        assert_eq!(BibleBook::Genesis.is_new_testament(), false);
+        assert_eq!(BibleBook::Revelation.is_new_testament(), true);
+        assert_eq!(
+            BibleBook::iter().filter(|b| b.is_new_testament()).count(),
+            27
+        );
+        for book in BibleBook::iter() {
+            assert_eq!(book.is_new_testament(), book.book_number() >= 40);
+        }
+    }
+
+    #[test]
+    fn test_is_old_testament() {
+        assert_eq!(BibleBook::Genesis.is_old_testament(), true);
+        assert_eq!(BibleBook::Revelation.is_old_testament(), false);
+        assert_eq!(
+            BibleBook::iter().filter(|b| b.is_old_testament()).count(),
+            39
+        );
+        assert_eq!(
+            BibleBook::iter()
+                .filter(|b| b.is_old_testament())
+                .last()
+                .unwrap(),
+            BibleBook::Malachi
+        );
+        for book in BibleBook::iter() {
+            assert_eq!(book.is_old_testament(), book.book_number() <= 39);
+        }
+    }
+
+    #[test]
+    fn test_ord() {
+        // lt
+        assert!(BibleBook::Genesis < BibleBook::Exodus);
+        assert!(BibleBook::Matthew < BibleBook::Revelation);
+        assert!(BibleBook::from_index(2).unwrap() < BibleBook::from_index(7).unwrap());
+        assert_eq!(BibleBook::Exodus < BibleBook::Genesis, false);
+        // gt
+        assert!(BibleBook::Exodus > BibleBook::Genesis);
+        assert!(BibleBook::Revelation > BibleBook::Matthew);
+        assert!(BibleBook::from_index(7).unwrap() > BibleBook::from_index(2).unwrap());
+        assert_eq!(BibleBook::Genesis > BibleBook::Exodus, false);
+        // le
+        assert!(BibleBook::Genesis <= BibleBook::Exodus);
+        assert!(BibleBook::Genesis <= BibleBook::Genesis);
+        assert!(BibleBook::Matthew <= BibleBook::Revelation);
+        assert!(BibleBook::Matthew <= BibleBook::Matthew);
+        assert!(BibleBook::from_index(2).unwrap() <= BibleBook::from_index(7).unwrap());
+        assert!(BibleBook::from_index(2).unwrap() <= BibleBook::from_index(2).unwrap());
+        assert_eq!(BibleBook::Exodus <= BibleBook::Genesis, false);
+        // ge
+        assert!(BibleBook::Exodus >= BibleBook::Genesis);
+        assert!(BibleBook::Exodus >= BibleBook::Exodus);
+        assert!(BibleBook::Revelation >= BibleBook::Matthew);
+        assert!(BibleBook::Revelation >= BibleBook::Revelation);
+        assert!(BibleBook::from_index(7).unwrap() >= BibleBook::from_index(2).unwrap());
+        assert!(BibleBook::from_index(7).unwrap() >= BibleBook::from_index(7).unwrap());
+        assert_eq!(BibleBook::Genesis >= BibleBook::Exodus, false);
     }
 }
