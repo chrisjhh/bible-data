@@ -11,3 +11,4 @@
 //! and ignore them if you don't. Let the linker do the work to include what is needed in
 //! the final binaries.
 pub mod book;
+pub mod chapter;

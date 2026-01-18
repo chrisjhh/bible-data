@@ -241,6 +241,24 @@ impl BibleBook {
         }
     }
 
+    /// Parse a string into a BibleBook instance
+    /// Attempts to match either a valid abbreviation
+    /// or the complete book name
+    ///
+    /// # Example
+    /// ```rust
+    /// use bible_data::BibleBook;
+    /// assert_eq!(BibleBook::parse("Ge").unwrap(), BibleBook::Genesis);
+    /// assert_eq!(BibleBook::parse("Genesis").unwrap(), BibleBook::Genesis);
+    /// assert!(BibleBook::parse("random text").is_none());
+    /// ```
+    pub fn parse(value: &str) -> Option<Self> {
+        match Self::parse_abbrev(value) {
+            Some(value) => Some(value),
+            None => Self::parse_name(value),
+        }
+    }
+
     /// Return an iterator over all the books of the Bible as BibleBook instances
     ///
     /// # Example
@@ -302,6 +320,24 @@ impl BibleBook {
     /// ```
     pub fn number_of_chapters(&self) -> u32 {
         BOOK_CHAPTERS[self.index()] as u32
+    }
+}
+
+// TryFrom / TryInto
+impl TryFrom<u8> for BibleBook {
+    type Error = OutOfRangeError;
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        Ok(Self::from_book_number(value as u32)?)
+    }
+}
+
+impl TryFrom<&str> for BibleBook {
+    type Error = ();
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match Self::parse(value) {
+            Some(book) => Ok(book),
+            None => Err(()),
+        }
     }
 }
 
@@ -464,6 +500,30 @@ mod tests {
             single_chapter_books,
             vec!["Obadiah", "Philemon", "2 John", "3 John", "Jude"]
         );
+    }
+
+    #[test]
+    fn test_try_into() {
+        fn is_single_chapter_book(value: impl TryInto<BibleBook>) -> Option<bool> {
+            match value.try_into() {
+                Err(_) => None,
+                Ok(book) => Some(book.number_of_chapters() == 1),
+            }
+        }
+
+        assert_eq!(is_single_chapter_book("Ge").unwrap(), false);
+        assert_eq!(is_single_chapter_book("Genesis").unwrap(), false);
+        assert_eq!(is_single_chapter_book(1).unwrap(), false);
+        assert_eq!(is_single_chapter_book(BibleBook::Genesis).unwrap(), false);
+
+        assert_eq!(is_single_chapter_book("3Jn").unwrap(), true);
+        assert_eq!(is_single_chapter_book("3 John").unwrap(), true);
+        assert_eq!(is_single_chapter_book(65).unwrap(), true);
+        assert_eq!(is_single_chapter_book(BibleBook::ThirdJohn).unwrap(), true);
+
+        assert!(is_single_chapter_book("1Macc").is_none());
+        assert!(is_single_chapter_book("1 Maccabees").is_none());
+        assert!(is_single_chapter_book(67).is_none());
     }
 
     #[test]
