@@ -1,4 +1,4 @@
-use crate::{BOOK_ABBREVS, BOOK_NAMES, parse_book_abbrev};
+use crate::{BOOK_ABBREVS, BOOK_CHAPTERS, BOOK_NAMES, parse_book_abbrev};
 use std::{error::Error, fmt::Display};
 
 /// Error returned when an index or booknumber was used that was out of range
@@ -132,7 +132,7 @@ impl BibleBook {
     /// assert_eq!(BibleBook::Genesis.name(), "Genesis");
     /// ```
     pub fn name(&self) -> &str {
-        BOOK_NAMES[self.index() as usize]
+        BOOK_NAMES[self.index()]
     }
 
     /// Return the abbreviation for this book
@@ -144,7 +144,7 @@ impl BibleBook {
     /// assert_eq!(BibleBook::Genesis.abbrev(), "Ge");
     /// ```
     pub fn abbrev(&self) -> &str {
-        BOOK_ABBREVS[self.index() as usize]
+        BOOK_ABBREVS[self.index()]
     }
 
     /// Construct a BibleBook from its book number.
@@ -293,6 +293,16 @@ impl BibleBook {
             _ => false,
         }
     }
+
+    /// Return the number of chapters in this book
+    ///
+    /// ```rust
+    /// use bible_data::BibleBook;
+    /// assert_eq!(BibleBook::Daniel.number_of_chapters(), 12);
+    /// ```
+    pub fn number_of_chapters(&self) -> u32 {
+        BOOK_CHAPTERS[self.index()] as u32
+    }
 }
 
 #[cfg(test)]
@@ -438,6 +448,22 @@ mod tests {
         for book in BibleBook::iter() {
             assert_eq!(book.is_old_testament(), book.book_number() <= 39);
         }
+    }
+
+    #[test]
+    fn test_number_of_chapters() {
+        assert_eq!(BibleBook::Genesis.number_of_chapters(), 50);
+        assert_eq!(BibleBook::Daniel.number_of_chapters(), 12);
+        assert_eq!(BibleBook::Revelation.number_of_chapters(), 22);
+        assert_eq!(BibleBook::Ephesians.number_of_chapters(), 6);
+        let single_chapter_books: Vec<_> = BibleBook::iter()
+            .filter(|b| b.number_of_chapters() == 1)
+            .map(|b| b.name().to_owned())
+            .collect();
+        assert_eq!(
+            single_chapter_books,
+            vec!["Obadiah", "Philemon", "2 John", "3 John", "Jude"]
+        );
     }
 
     #[test]
