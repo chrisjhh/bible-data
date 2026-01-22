@@ -373,4 +373,5 @@ mod tests {
 mod structs;
 pub use structs::book;
 pub use structs::book::BibleBook;
+pub use structs::bookorchapter::BibleBookOrChapter;
 pub use structs::chapter::BibleChapter;
