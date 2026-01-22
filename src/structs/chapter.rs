@@ -50,7 +50,7 @@ impl BibleChapter {
                     Some(pos) => {
                         let remain = &text[pos + 1..];
                         // This should be the chapter number
-                        match u8::from_str(&remain) {
+                        match u8::from_str(remain) {
                             Err(_) => None,
                             Ok(chapter) if chapter as u32 > book.number_of_chapters() => None,
                             Ok(chapter) => {

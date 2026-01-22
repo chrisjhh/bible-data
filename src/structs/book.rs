@@ -172,10 +172,10 @@ impl BibleBook {
             // Reasons to use it:
             // An exhaustive match statement for all 66 books would be tedious and *more* error prone
             1..=66 => unsafe { Ok(std::mem::transmute::<u8, BibleBook>(number as u8)) },
-            _ => Err(OutOfRangeError::new(String::from(format!(
+            _ => Err(OutOfRangeError::new(format!(
                 "{}. book_number should be in range 1..=66",
                 number
-            )))),
+            ))),
         }
     }
 
@@ -197,10 +197,10 @@ impl BibleBook {
             66 => Err(OutOfRangeError::new(String::from(
                 "66 used. Highest value of index is 65. Did you mean to use from_book_number()?",
             ))),
-            67.. => Err(OutOfRangeError::new(String::from(format!(
+            67.. => Err(OutOfRangeError::new(format!(
                 "{}. index should be in range 0..66",
                 index
-            )))),
+            ))),
             _ => Self::from_book_number(index as u32 + 1),
         }
     }
@@ -288,10 +288,7 @@ impl BibleBook {
     /// assert_eq!(BibleBook::iter().filter(|b| b.is_new_testament()).count(), 27);
     /// ```
     pub fn is_new_testament(&self) -> bool {
-        match self.book_number() {
-            40..=66 => true,
-            _ => false,
-        }
+        matches!(self.book_number(), 40..=66)
     }
 
     /// Return if this book is part of the Old Testament
@@ -306,10 +303,7 @@ impl BibleBook {
     /// assert_eq!(BibleBook::iter().filter(|b| b.is_old_testament()).last().unwrap(), BibleBook::Malachi);
     /// ```
     pub fn is_old_testament(&self) -> bool {
-        match self.book_number() {
-            1..=39 => true,
-            _ => false,
-        }
+        matches!(self.book_number(), 1..=39)
     }
 
     /// Return the number of chapters in this book
@@ -327,7 +321,7 @@ impl BibleBook {
 impl TryFrom<u8> for BibleBook {
     type Error = OutOfRangeError;
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        Ok(Self::from_book_number(value as u32)?)
+        Self::from_book_number(value as u32)
     }
 }
 
