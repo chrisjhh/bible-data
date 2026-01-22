@@ -13,6 +13,17 @@ pub struct BibleChapter {
 
 #[allow(dead_code)]
 impl BibleChapter {
+    /// Construct a new BibleChapter from the book and chapter
+    pub fn new(book: BibleBook, chapter: u8) -> Self {
+        BibleChapter { book, chapter }
+    }
+
+    /// Check that the chapter is in the right range
+    pub fn is_valid(&self) -> bool {
+        let range = 1..=self.book.number_of_chapters();
+        range.contains(&(self.chapter as u32))
+    }
+
     /// Attempt to parse a Bible book and chapter from a string
     ///
     /// # Example
@@ -113,5 +124,28 @@ mod tests {
                 chapter: 1
             })
         ); // But we should also be able to specify it explicitly
+    }
+
+    #[test]
+    fn test_ord() {
+        let gen1 = BibleChapter::new(BibleBook::Genesis, 1);
+        let gen2 = BibleChapter::new(BibleBook::Genesis, 2);
+        let gen50 = BibleChapter::new(BibleBook::Genesis, 50);
+        let ex5 = BibleChapter::new(BibleBook::Exodus, 5);
+        let lev1 = BibleChapter::new(BibleBook::Leviticus, 1);
+
+        assert!(gen1 < gen2);
+        assert!(gen50 > gen2);
+        assert!(ex5 > gen50);
+        assert!(gen50 < ex5);
+        assert!(gen50 < lev1);
+        assert!(gen1 == BibleChapter::new(BibleBook::Genesis, 1));
+    }
+
+    #[test]
+    fn test_is_valid() {
+        assert!(BibleChapter::new(BibleBook::Genesis, 50).is_valid());
+        assert!(!BibleChapter::new(BibleBook::Genesis, 0).is_valid());
+        assert!(!BibleChapter::new(BibleBook::Genesis, 51).is_valid());
     }
 }
