@@ -14,8 +14,12 @@ pub struct BibleChapter {
 #[allow(dead_code)]
 impl BibleChapter {
     /// Construct a new BibleChapter from the book and chapter
-    pub fn new(book: BibleBook, chapter: u8) -> Self {
-        BibleChapter { book, chapter }
+    pub fn new(book: BibleBook, chapter: u8) -> Option<Self> {
+        let result = BibleChapter { book, chapter };
+        match result.is_valid() {
+            true => Some(result),
+            false => None,
+        }
     }
 
     /// Check that the chapter is in the right range
@@ -144,8 +148,33 @@ mod tests {
 
     #[test]
     fn test_is_valid() {
-        assert!(BibleChapter::new(BibleBook::Genesis, 50).is_valid());
-        assert!(!BibleChapter::new(BibleBook::Genesis, 0).is_valid());
-        assert!(!BibleChapter::new(BibleBook::Genesis, 51).is_valid());
+        assert!(
+            BibleChapter {
+                book: BibleBook::Genesis,
+                chapter: 50
+            }
+            .is_valid()
+        );
+        assert!(
+            !BibleChapter {
+                book: BibleBook::Genesis,
+                chapter: 0
+            }
+            .is_valid()
+        );
+        assert!(
+            !BibleChapter {
+                book: BibleBook::Genesis,
+                chapter: 51
+            }
+            .is_valid()
+        );
+    }
+
+    #[test]
+    fn test_new() {
+        assert!(BibleChapter::new(BibleBook::Genesis, 50).is_some());
+        assert!(BibleChapter::new(BibleBook::Genesis, 0).is_none());
+        assert!(BibleChapter::new(BibleBook::Genesis, 51).is_none());
     }
 }
