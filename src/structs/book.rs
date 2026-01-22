@@ -192,7 +192,7 @@ impl BibleBook {
     /// assert_eq!(BibleBook::from_index(0).unwrap(), BibleBook::Genesis);
     /// assert_eq!(BibleBook::from_index(65).unwrap(), BibleBook::Revelation);
     /// ```
-    pub fn from_index(index: u32) -> Result<Self, OutOfRangeError> {
+    pub fn from_index(index: usize) -> Result<Self, OutOfRangeError> {
         match index {
             66 => Err(OutOfRangeError::new(String::from(
                 "66 used. Highest value of index is 65. Did you mean to use from_book_number()?",
@@ -201,7 +201,7 @@ impl BibleBook {
                 "{}. index should be in range 0..66",
                 index
             )))),
-            _ => Self::from_book_number(index + 1),
+            _ => Self::from_book_number(index as u32 + 1),
         }
     }
 
@@ -219,7 +219,7 @@ impl BibleBook {
     pub fn parse_abbrev(abbrev: &str) -> Option<Self> {
         match parse_book_abbrev(abbrev) {
             None => None,
-            Some(index) => Self::from_index(index as u32).ok(),
+            Some(index) => Self::from_index(index).ok(),
         }
     }
 
@@ -237,7 +237,7 @@ impl BibleBook {
     pub fn parse_name(name: &str) -> Option<Self> {
         match BOOK_NAMES.iter().enumerate().find(|item| *item.1 == name) {
             None => None,
-            Some(item) => Self::from_index(item.0 as u32).ok(),
+            Some(item) => Self::from_index(item.0).ok(),
         }
     }
 
