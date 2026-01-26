@@ -97,6 +97,12 @@ pub enum BibleBook {
     Revelation,
 }
 
+impl Display for BibleBook {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
 #[allow(dead_code)]
 impl BibleBook {
     /// Return the book number for this book as it occurs in the Bible.
@@ -548,5 +554,11 @@ mod tests {
         assert!(BibleBook::from_index(7).unwrap() >= BibleBook::from_index(2).unwrap());
         assert!(BibleBook::from_index(7).unwrap() >= BibleBook::from_index(7).unwrap());
         assert_eq!(BibleBook::Genesis >= BibleBook::Exodus, false);
+    }
+
+    #[test]
+    fn test_display() {
+        let display = format!("{}", BibleBook::FirstKings);
+        assert_eq!(display, "1 Kings");
     }
 }

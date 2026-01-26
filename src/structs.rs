@@ -13,3 +13,5 @@
 pub mod book;
 pub mod bookorchapter;
 pub mod chapter;
+pub mod chapterandverse;
+pub mod verse;

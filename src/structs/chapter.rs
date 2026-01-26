@@ -1,6 +1,6 @@
 use super::book::BibleBook;
 use crate::parse_book_abbrev;
-use std::str::FromStr;
+use std::{fmt::Display, str::FromStr};
 
 /// A struct representing a chapter in the Bible
 /// Contains the [BibleBook] and the chapter number
@@ -9,6 +9,12 @@ use std::str::FromStr;
 pub struct BibleChapter {
     pub book: BibleBook,
     pub chapter: u8,
+}
+
+impl Display for BibleChapter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.book.abbrev(), self.chapter)
+    }
 }
 
 #[allow(dead_code)]
@@ -176,5 +182,11 @@ mod tests {
         assert!(BibleChapter::new(BibleBook::Genesis, 50).is_some());
         assert!(BibleChapter::new(BibleBook::Genesis, 0).is_none());
         assert!(BibleChapter::new(BibleBook::Genesis, 51).is_none());
+    }
+
+    #[test]
+    fn test_display() {
+        let display = format!("{}", BibleChapter::new(BibleBook::Eccesiastes, 2).unwrap());
+        assert_eq!(display, "Ecc 2")
     }
 }
