@@ -122,6 +122,8 @@ mod tests {
                 verse: 5
             }
         );
+        // Should not be implicit for other books
+        assert_eq!(BibleVerse::parse("Judges 5"), None);
     }
 
     #[test]
