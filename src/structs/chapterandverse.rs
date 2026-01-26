@@ -4,8 +4,8 @@ use std::{fmt::Display, str::FromStr};
 #[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq)]
 pub struct ChapterAndVerse {
-    chapter: u8,
-    verse: u8,
+    pub chapter: u8,
+    pub verse: u8,
 }
 
 impl Display for ChapterAndVerse {

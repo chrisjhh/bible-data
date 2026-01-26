@@ -1,7 +1,8 @@
 use std::fmt::Display;
 
 use super::book::BibleBook;
-use super::chapterandverse::ChapterAndVerse;
+use super::chapterandverseorverse::ChapterAndVerseOrVerse;
+use crate::parse_book_abbrev;
 
 #[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq)]
@@ -37,7 +38,6 @@ impl Ord for BibleVerse {
     }
 }
 
-/*
 #[allow(dead_code)]
 impl BibleVerse {
     pub fn parse(text: &str) -> Option<Self> {
@@ -49,31 +49,31 @@ impl BibleVerse {
                 let book = BibleBook::from_index(index)
                     .expect("Result of parse_book_abbrev should be in range");
                 // Result of parse_book_abbrev ends with end of string or space character
-                // We can find rest of strin (if any) by looking for the first space character
-                let mut chapter: Option<u8> = None;
-                let mut verse: Option<u8> = None;
+                // We can find rest of string (if any) by looking for the first space character
                 match text.find(" ") {
                     None => None, // There is no chapter/verse specified
                     Some(pos) => {
                         let remain = &text[pos + 1..];
-                        match ChapterAndVerse::parse(remain) {
-                            None => {
-                                // No chapter and verse specified
+                        match ChapterAndVerseOrVerse::parse(remain) {
+                            None => None,
+                            Some(ChapterAndVerseOrVerse::JustVerse(verse)) => {
+                                // No chapter
                                 // This is invalid, unless the book only has one chapter
                                 // In which case, chapter one is implicit
                                 match book.number_of_chapters() {
-                                    1 => Some(BibleChapter { book, chapter: 1 }),
+                                    1 => Some(BibleVerse {
+                                        book,
+                                        chapter: 1,
+                                        verse,
+                                    }),
                                     _ => None,
                                 }
                             }
-                        // This should be the chapter number
-                        match u8::from_str(remain) {
-                            Err(_) => None,
-                            Ok(chapter) if chapter as u32 > book.number_of_chapters() => None,
-                            Ok(chapter) => {
-                                // We have a valid reference!
-                                Some(BibleChapter { book, chapter })
-                            }
+                            Some(ChapterAndVerseOrVerse::Both(cv)) => Some(BibleVerse {
+                                book,
+                                chapter: cv.chapter,
+                                verse: cv.verse,
+                            }),
                         }
                     }
                 }
@@ -81,4 +81,3 @@ impl BibleVerse {
         }
     }
 }
-*/
