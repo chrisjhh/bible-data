@@ -123,4 +123,54 @@ mod tests {
             }
         );
     }
+
+    #[test]
+    fn test_display() {
+        assert_eq!(
+            format!(
+                "{}",
+                BibleVerse {
+                    book: BibleBook::Acts,
+                    chapter: 2,
+                    verse: 1
+                }
+            ),
+            "Ac 2:1"
+        );
+    }
+
+    #[test]
+    fn test_ord() {
+        let v1 = BibleVerse {
+            book: BibleBook::Genesis,
+            chapter: 1,
+            verse: 1,
+        };
+        let v2 = BibleVerse {
+            book: BibleBook::Genesis,
+            chapter: 1,
+            verse: 10,
+        };
+        let v3 = BibleVerse {
+            book: BibleBook::Genesis,
+            chapter: 2,
+            verse: 1,
+        };
+        let v4 = BibleVerse {
+            book: BibleBook::Exodus,
+            chapter: 1,
+            verse: 1,
+        };
+        let v5 = BibleVerse {
+            book: BibleBook::Genesis,
+            chapter: 1,
+            verse: 1,
+        };
+        assert!(v1 < v2);
+        assert!(v3 > v2);
+        assert!(v3 > v1);
+        assert!(v4 > v3);
+        assert!(v1 < v4);
+        assert!(v1 == v5);
+    }
 }
