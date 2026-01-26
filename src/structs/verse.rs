@@ -81,3 +81,46 @@ impl BibleVerse {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse() {
+        assert_eq!(
+            BibleVerse::parse("Ge 1:1").unwrap(),
+            BibleVerse {
+                book: BibleBook::Genesis,
+                chapter: 1,
+                verse: 1
+            }
+        );
+        assert_eq!(
+            BibleVerse::parse("Ps 119:176").unwrap(),
+            BibleVerse {
+                book: BibleBook::Psalms,
+                chapter: 119,
+                verse: 176
+            }
+        );
+        // First chapter is implicit for single-chapter books
+        assert_eq!(
+            BibleVerse::parse("Jude 5").unwrap(),
+            BibleVerse {
+                book: BibleBook::Jude,
+                chapter: 1,
+                verse: 5
+            }
+        );
+        // But it may also be specified implicitly
+        assert_eq!(
+            BibleVerse::parse("Jude 1:5").unwrap(),
+            BibleVerse {
+                book: BibleBook::Jude,
+                chapter: 1,
+                verse: 5
+            }
+        );
+    }
+}
