@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::{fmt::Display, str::FromStr};
 
 #[allow(dead_code)]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ChapterAndVerse {
     pub chapter: u8,
     pub verse: u8,
