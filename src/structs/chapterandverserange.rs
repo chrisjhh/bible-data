@@ -4,7 +4,7 @@ use std::ops::RangeInclusive;
 
 #[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq)]
-pub struct ChapterAndVerseRange(RangeInclusive<ChapterAndVerse>);
+pub struct ChapterAndVerseRange(pub RangeInclusive<ChapterAndVerse>);
 
 /// Chapter and Verse ranges may be full or implicit
 /// Full ranges specify the chapter at least at the start of the range
