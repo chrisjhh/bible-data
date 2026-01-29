@@ -199,4 +199,28 @@ mod tests {
         assert!(!range.contains(&BibleVerse::new(book, 5, 3)));
         assert!(!range.contains(&BibleVerse::new(BibleBook::Exodus, 4, 11)));
     }
+
+    #[test]
+    fn test_chapters() {
+        let range = BibleVerseRange::new(BibleBook::Ezekiel, 4, 10, 6, 1);
+        let mut it = range.chapters();
+        assert_eq!(it.next().unwrap(), 4);
+        assert_eq!(it.next().unwrap(), 5);
+        assert_eq!(it.next().unwrap(), 6);
+        assert_eq!(it.next(), None);
+    }
+
+    #[test]
+    fn test_try_from() {
+        fn num_chapters(item: impl TryInto<BibleVerseRange>) -> Option<usize> {
+            let range = item.try_into().ok()?;
+            Some(range.chapters().count())
+        }
+
+        assert_eq!(num_chapters("Ge 1:2-3:5").unwrap(), 3);
+        assert_eq!(
+            num_chapters(BibleVerse::new(BibleBook::Acts, 10, 1)).unwrap(),
+            1
+        );
+    }
 }
