@@ -99,10 +99,7 @@ impl Display for BibleVerseRange {
 impl TryFrom<&str> for BibleVerseRange {
     type Error = ();
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match BibleVerseRange::parse(value) {
-            None => Err(()),
-            Some(item) => Ok(item),
-        }
+        BibleVerseRange::parse(value).ok_or(())
     }
 }
 
@@ -188,5 +185,18 @@ mod tests {
             format!("{}", BibleVerseRange::new(BibleBook::Jude, 1, 2, 1, 2)),
             "Jude 2"
         );
+    }
+
+    #[test]
+    fn test_contains() {
+        let book = BibleBook::Genesis;
+        let range = BibleVerseRange::new(book, 4, 10, 5, 2);
+        assert!(!range.contains(&BibleVerse::new(book, 4, 9)));
+        assert!(range.contains(&BibleVerse::new(book, 4, 10)));
+        assert!(range.contains(&BibleVerse::new(book, 4, 11)));
+        assert!(range.contains(&BibleVerse::new(book, 5, 1)));
+        assert!(range.contains(&BibleVerse::new(book, 5, 2)));
+        assert!(!range.contains(&BibleVerse::new(book, 5, 3)));
+        assert!(!range.contains(&BibleVerse::new(BibleBook::Exodus, 4, 11)));
     }
 }

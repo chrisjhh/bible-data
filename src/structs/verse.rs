@@ -80,6 +80,21 @@ impl BibleVerse {
             }
         }
     }
+
+    pub fn new(book: BibleBook, chapter: u8, verse: u8) -> Self {
+        BibleVerse {
+            book,
+            chapter,
+            verse,
+        }
+    }
+}
+
+impl TryFrom<&str> for BibleVerse {
+    type Error = ();
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        BibleVerse::parse(value).ok_or(())
+    }
 }
 
 #[cfg(test)]
