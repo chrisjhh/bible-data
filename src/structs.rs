@@ -16,5 +16,6 @@ pub mod chapter;
 pub mod chapterandverse;
 pub mod chapterandverseorverse;
 pub mod chapterandverserange;
+pub mod errors;
 pub mod verse;
 pub mod verserange;

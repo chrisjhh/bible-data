@@ -1,23 +1,7 @@
+use super::errors::{NoSuchBookError, OutOfRangeError};
 use crate::{BOOK_ABBREVS, BOOK_CHAPTERS, BOOK_NAMES, parse_book_abbrev};
-use std::{error::Error, fmt::Display};
-
-/// Error returned when an index or booknumber was used that was out of range
-#[derive(Debug)]
-pub struct OutOfRangeError {
-    message: String,
-}
-
-impl Display for OutOfRangeError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "OutOfRangeError: {}", &self.message)
-    }
-}
-impl Error for OutOfRangeError {}
-impl OutOfRangeError {
-    pub fn new(message: String) -> Self {
-        OutOfRangeError { message }
-    }
-}
+use std::fmt::Display;
+use std::str::FromStr;
 
 /// Enum representing a book of the bible
 /// Uses Rust type safty to ensure the wrapped u8 value is in the correct range
@@ -259,10 +243,7 @@ impl BibleBook {
     /// assert!(BibleBook::parse("random text").is_none());
     /// ```
     pub fn parse(value: &str) -> Option<Self> {
-        match Self::parse_abbrev(value) {
-            Some(value) => Some(value),
-            None => Self::parse_name(value),
-        }
+        value.parse().ok()
     }
 
     /// Return an iterator over all the books of the Bible as BibleBook instances
@@ -332,11 +313,24 @@ impl TryFrom<u8> for BibleBook {
 }
 
 impl TryFrom<&str> for BibleBook {
-    type Error = ();
+    type Error = NoSuchBookError;
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match Self::parse(value) {
             Some(book) => Ok(book),
-            None => Err(()),
+            None => Err(NoSuchBookError::new(value.to_string())),
+        }
+    }
+}
+
+impl FromStr for BibleBook {
+    type Err = NoSuchBookError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match Self::parse_abbrev(s) {
+            Some(value) => Ok(value),
+            None => match Self::parse_name(s) {
+                Some(value) => Ok(value),
+                None => Err(NoSuchBookError::new(s.to_string())),
+            },
         }
     }
 }
