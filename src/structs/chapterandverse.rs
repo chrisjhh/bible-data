@@ -1,3 +1,4 @@
+use super::errors::{InvalidFormat, NotANumber, ParseChapterVeseError};
 use std::cmp::Ordering;
 use std::{fmt::Display, str::FromStr};
 
@@ -33,14 +34,30 @@ impl Ord for ChapterAndVerse {
 #[allow(dead_code)]
 impl ChapterAndVerse {
     pub fn parse(text: &str) -> Option<Self> {
-        match text.find(":") {
-            None => None,
+        text.parse().ok()
+    }
+
+    pub fn new(chapter: u8, verse: u8) -> Self {
+        ChapterAndVerse { chapter, verse }
+    }
+}
+
+impl FromStr for ChapterAndVerse {
+    type Err = ParseChapterVeseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.find(":") {
+            None => {
+                Err(InvalidFormat::new(format!("No ':' found for chapter and verse: {}", s)).into())
+            }
             Some(pos) => {
-                let before = &text[..pos];
-                let after = &text[pos + 1..];
-                let chapter = u8::from_str(before).ok()?;
-                let verse = u8::from_str(after).ok()?;
-                Some(ChapterAndVerse { chapter, verse })
+                let before = &s[..pos];
+                let after = &s[pos + 1..];
+                let chapter = u8::from_str(before).map_err(|_| {
+                    NotANumber::new(format!("Invalid number for chapter: {}", before))
+                })?;
+                let verse = u8::from_str(after)
+                    .map_err(|_| NotANumber::new(format!("Invalid number for verse {}", after)))?;
+                Ok(ChapterAndVerse { chapter, verse })
             }
         }
     }

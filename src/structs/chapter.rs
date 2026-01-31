@@ -2,7 +2,6 @@ use super::book::BibleBook;
 use super::errors::{
     ChapterOutOfRange, NoChapterSpecified, NoSuchBookError, NotANumber, ParseChapterError,
 };
-use crate::parse_book_abbrev;
 use std::{fmt::Display, str::FromStr};
 
 /// A struct representing a chapter in the Bible
@@ -77,54 +76,49 @@ impl FromStr for BibleChapter {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Start by attempting to parse the book from the abbrev at the start of the text
         // as this is very quick
-        match parse_book_abbrev(s) {
-            None => Err(NoSuchBookError::new(
+        let book = BibleBook::parse_abbrev(s).ok_or_else(|| {
+            NoSuchBookError::new(
                 match s.split_once(" ") {
                     None => s,
                     Some(split) => split.0,
                 }
                 .to_string(),
             )
-            .into()),
-            Some(index) => {
-                let book = BibleBook::from_index(index)
-                    .expect("Result of parse_book_abbrev should be in range");
-                // Result of parse_book_abbrev ends with end of string or space character
-                // We can find rest of strin (if any) by looking for the first space character
-                match s.find(" ") {
-                    None => {
-                        // There is no chapter specified
-                        // This is invalid, unless the book only has one chapter
-                        // In which case, chapter one is implicit
-                        match book.number_of_chapters() {
-                            1 => Ok(BibleChapter { book, chapter: 1 }),
-                            _ => Err(NoChapterSpecified::new(s.to_string()).into()),
-                        }
+        })?;
+        // Result of parse_book_abbrev ends with end of string or space character
+        // We can find rest of strin (if any) by looking for the first space character
+        match s.find(" ") {
+            None => {
+                // There is no chapter specified
+                // This is invalid, unless the book only has one chapter
+                // In which case, chapter one is implicit
+                match book.number_of_chapters() {
+                    1 => Ok(BibleChapter { book, chapter: 1 }),
+                    _ => Err(NoChapterSpecified::new(s.to_string()).into()),
+                }
+            }
+            Some(pos) => {
+                let remain = &s[pos + 1..];
+                // This should be the chapter number
+                match u8::from_str(remain) {
+                    Err(_) => Err(NotANumber::new(remain.to_string()).into()),
+                    Ok(chapter) if chapter == 0 => Err(ChapterOutOfRange::new(
+                        "0. Chapter numbers start at 1".to_string(),
+                    )
+                    .into()),
+                    Ok(chapter) if chapter as u32 > book.number_of_chapters() => {
+                        Err(ChapterOutOfRange::new(format!(
+                            "{} has {} chapters. {} is too high.",
+                            book.name(),
+                            book.number_of_chapters(),
+                            chapter
+                        ))
+                        .into())
                     }
-                    Some(pos) => {
-                        let remain = &s[pos + 1..];
-                        // This should be the chapter number
-                        match u8::from_str(remain) {
-                            Err(_) => Err(NotANumber::new(remain.to_string()).into()),
-                            Ok(chapter) if chapter == 0 => Err(ChapterOutOfRange::new(
-                                "0. Chapter numbers start at 1".to_string(),
-                            )
-                            .into()),
-                            Ok(chapter) if chapter as u32 > book.number_of_chapters() => {
-                                Err(ChapterOutOfRange::new(format!(
-                                    "{} has {} chapters. {} is too high.",
-                                    book.name(),
-                                    book.number_of_chapters(),
-                                    chapter
-                                ))
-                                .into())
-                            }
-                            Ok(chapter) =>
-                            // We have a valid reference!
-                            {
-                                Ok(BibleChapter { book, chapter })
-                            }
-                        }
+                    Ok(chapter) =>
+                    // We have a valid reference!
+                    {
+                        Ok(BibleChapter { book, chapter })
                     }
                 }
             }

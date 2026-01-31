@@ -1,3 +1,4 @@
+use super::chapterandverserange::ChapterAndVerseRange;
 use std::error::Error;
 use std::fmt::Display;
 
@@ -19,6 +20,26 @@ macro_rules! create_error {
         impl $error_name {
             pub fn new(message: String) -> Self {
                 $error_name { message }
+            }
+        }
+    };
+    ($error_name:ident<$data_type:ident>) => {
+        #[allow(dead_code)]
+        #[derive(Debug, Clone)]
+        pub struct $error_name {
+            pub data: $data_type,
+        }
+        impl Display for $error_name {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "{:?}: {:?}", stringify!($error_name), &self.data)
+            }
+        }
+        impl Error for $error_name {}
+
+        #[allow(dead_code)]
+        impl $error_name {
+            pub fn new(data: $data_type) -> Self {
+                $error_name { data }
             }
         }
     };
@@ -44,6 +65,7 @@ macro_rules! create_error {
             }
         )+
         impl $error_type {
+             #[allow(dead_code)]
             pub fn inner_into<T>(&self) -> T
             where T: $(From<$sub_type> +)+
             {
@@ -60,5 +82,9 @@ create_error!(NoSuchBookError);
 create_error!(NoChapterSpecified);
 create_error!(NotANumber);
 create_error!(ChapterOutOfRange);
+create_error!(InvalidFormat);
+create_error!(ImplicitRange<ChapterAndVerseRange>);
 
 create_error!(ParseChapterError : NoSuchBookError, NoChapterSpecified, NotANumber, ChapterOutOfRange);
+create_error!(ParseChapterVeseError: NotANumber, InvalidFormat);
+create_error!(ParseChapterVeseRangeError: NotANumber, InvalidFormat, ImplicitRange);

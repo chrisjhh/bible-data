@@ -1,4 +1,7 @@
+use crate::structs::errors::NotANumber;
+
 use super::chapterandverse::ChapterAndVerse;
+use super::errors::ParseChapterVeseError;
 use std::str::FromStr;
 
 #[allow(dead_code)]
@@ -11,15 +14,18 @@ pub enum ChapterAndVerseOrVerse {
 #[allow(dead_code)]
 impl ChapterAndVerseOrVerse {
     pub fn parse(text: &str) -> Option<Self> {
-        match text.find(":") {
-            None => match u8::from_str(text) {
-                Err(_) => None,
-                Ok(val) => Some(ChapterAndVerseOrVerse::JustVerse(val)),
-            },
-            Some(_) => match ChapterAndVerse::parse(text) {
-                None => None,
-                Some(cv) => Some(ChapterAndVerseOrVerse::Both(cv)),
-            },
+        text.parse().ok()
+    }
+}
+
+impl FromStr for ChapterAndVerseOrVerse {
+    type Err = ParseChapterVeseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.find(":") {
+            None => u8::from_str(s)
+                .map(ChapterAndVerseOrVerse::JustVerse)
+                .map_err(|_| NotANumber::new(s.to_string()).into()),
+            Some(_) => ChapterAndVerse::from_str(s).map(ChapterAndVerseOrVerse::Both),
         }
     }
 }

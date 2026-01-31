@@ -1,7 +1,9 @@
 use std::fmt::Display;
+use std::str::FromStr;
 
 use super::book::BibleBook;
 use super::chapter::BibleChapter;
+use super::errors::ParseChapterError;
 
 #[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq)]
@@ -25,6 +27,18 @@ impl BibleBookOrChapter {
         match text.find(" ") {
             None => BibleBook::parse(text).map(BibleBookOrChapter::Book),
             Some(_) => BibleChapter::parse(text).map(BibleBookOrChapter::Chapter),
+        }
+    }
+}
+
+impl FromStr for BibleBookOrChapter {
+    type Err = ParseChapterError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.find(" ") {
+            None => BibleBook::from_str(s)
+                .map(BibleBookOrChapter::Book)
+                .map_err(ParseChapterError::NoSuchBookError),
+            Some(_) => BibleChapter::from_str(s).map(BibleBookOrChapter::Chapter),
         }
     }
 }

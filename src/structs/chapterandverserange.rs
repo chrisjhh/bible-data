@@ -1,9 +1,13 @@
+use crate::structs::errors::{ImplicitRange, InvalidFormat};
+
 use super::chapterandverse::ChapterAndVerse;
 use super::chapterandverseorverse::ChapterAndVerseOrVerse;
+use super::errors::ParseChapterVeseRangeError;
 use std::ops::RangeInclusive;
+use std::str::FromStr;
 
 #[allow(dead_code)]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ChapterAndVerseRange(pub RangeInclusive<ChapterAndVerse>);
 
 /// Chapter and Verse ranges may be full or implicit
@@ -23,39 +27,43 @@ pub enum FullOrImplicitRange {
 #[allow(dead_code)]
 impl ChapterAndVerseRange {
     pub fn parse(text: &str) -> Option<FullOrImplicitRange> {
-        match text.find("-") {
+        match ChapterAndVerseRange::from_str(text) {
+            Ok(cvr) => Some(FullOrImplicitRange::Full(cvr)),
+            Err(ParseChapterVeseRangeError::ImplicitRange(ImplicitRange { data })) => {
+                Some(FullOrImplicitRange::Implicit(data))
+            }
+            Err(_) => None,
+        }
+    }
+}
+
+impl FromStr for ChapterAndVerseRange {
+    type Err = ParseChapterVeseRangeError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.find("-") {
             None => {
                 // Single verse range
-                match ChapterAndVerseOrVerse::parse(text)? {
+                match ChapterAndVerseOrVerse::from_str(s)
+                    .map_err(|e| e.inner_into::<ParseChapterVeseRangeError>())?
+                {
                     ChapterAndVerseOrVerse::Both(cv) => {
-                        Some(FullOrImplicitRange::Full(ChapterAndVerseRange(
-                            ChapterAndVerse {
-                                chapter: cv.chapter,
-                                verse: cv.verse,
-                            }..=ChapterAndVerse {
-                                chapter: cv.chapter,
-                                verse: cv.verse,
-                            },
-                        )))
+                        Ok(ChapterAndVerseRange(cv.clone()..=cv.clone()))
                     }
                     ChapterAndVerseOrVerse::JustVerse(v) => {
-                        Some(FullOrImplicitRange::Implicit(ChapterAndVerseRange(
-                            ChapterAndVerse {
-                                chapter: 1,
-                                verse: v,
-                            }..=ChapterAndVerse {
-                                chapter: 1,
-                                verse: v,
-                            },
-                        )))
+                        Err(ImplicitRange::new(ChapterAndVerseRange(
+                            ChapterAndVerse::new(1, v)..=ChapterAndVerse::new(1, v),
+                        ))
+                        .into())
                     }
                 }
             }
             Some(pos) => {
-                let start = &text[..pos];
-                let end = &text[pos + 1..];
-                let cvv_start = ChapterAndVerseOrVerse::parse(start)?;
-                let cvv_end = ChapterAndVerseOrVerse::parse(end)?;
+                let start = &s[..pos];
+                let end = &s[pos + 1..];
+                let cvv_start = ChapterAndVerseOrVerse::from_str(start)
+                    .map_err(|e| e.inner_into::<ParseChapterVeseRangeError>())?;
+                let cvv_end = ChapterAndVerseOrVerse::from_str(end)
+                    .map_err(|e| e.inner_into::<ParseChapterVeseRangeError>())?;
                 let mut implicit = false;
                 let cv_start = match cvv_start {
                     ChapterAndVerseOrVerse::Both(cv) => cv,
@@ -71,7 +79,12 @@ impl ChapterAndVerseRange {
                     ChapterAndVerseOrVerse::Both(cv) => {
                         match implicit {
                             false => cv,
-                            true => return None, // Can't specify chapter at end only!
+                            true => {
+                                return Err(InvalidFormat::new(
+                                    "Chapter specified at end only".to_string(),
+                                )
+                                .into());
+                            } // Can't specify chapter at end only!
                         }
                     }
                     ChapterAndVerseOrVerse::JustVerse(v) => ChapterAndVerse {
@@ -80,12 +93,8 @@ impl ChapterAndVerseRange {
                     },
                 };
                 match implicit {
-                    false => Some(FullOrImplicitRange::Full(ChapterAndVerseRange(
-                        cv_start..=cv_end,
-                    ))),
-                    true => Some(FullOrImplicitRange::Implicit(ChapterAndVerseRange(
-                        cv_start..=cv_end,
-                    ))),
+                    false => Ok(ChapterAndVerseRange(cv_start..=cv_end)),
+                    true => Err(ImplicitRange::new(ChapterAndVerseRange(cv_start..=cv_end)).into()),
                 }
             }
         }
