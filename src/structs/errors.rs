@@ -4,7 +4,7 @@ use std::fmt::Display;
 macro_rules! create_error {
     ($error_name:ident) => {
         #[allow(dead_code)]
-        #[derive(Debug)]
+        #[derive(Debug, Clone)]
         pub struct $error_name {
             message: String,
         }
@@ -43,6 +43,15 @@ macro_rules! create_error {
                 }
             }
         )+
+        impl $error_type {
+            pub fn inner_into<T>(&self) -> T
+            where T: $(From<$sub_type> +)+
+            {
+                match self {
+                    $($error_type::$sub_type(e) => (*e).clone().into()),+
+                }
+            }
+        }
     }
 }
 
