@@ -1,6 +1,6 @@
 use super::book::BibleBook;
 use super::errors::{
-    ChapterOutOfRange, NoChapterSpecified, NoSuchBookError, NotANumber, ParseChapterError,
+    ChapterOutOfRange, NoChapterSpecified, NoSuchBookError, NotANumber, ParseError,
 };
 use std::{fmt::Display, str::FromStr};
 
@@ -72,19 +72,12 @@ impl Ord for BibleChapter {
 }
 
 impl FromStr for BibleChapter {
-    type Err = ParseChapterError;
+    type Err = ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Start by attempting to parse the book from the abbrev at the start of the text
         // as this is very quick
-        let book = BibleBook::parse_abbrev(s).ok_or_else(|| {
-            NoSuchBookError::new(
-                match s.split_once(" ") {
-                    None => s,
-                    Some(split) => split.0,
-                }
-                .to_string(),
-            )
-        })?;
+        let book = BibleBook::parse_abbrev(s)
+            .ok_or_else(|| NoSuchBookError::new(String::from("No matching abbreviation")))?;
         // Result of parse_book_abbrev ends with end of string or space character
         // We can find rest of strin (if any) by looking for the first space character
         match s.find(" ") {

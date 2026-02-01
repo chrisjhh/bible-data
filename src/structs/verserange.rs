@@ -1,9 +1,12 @@
 use std::fmt::Display;
 use std::ops::RangeInclusive;
+use std::str::FromStr;
+
+use super::errors::{InvalidRange, NoChapterSpecified, NoSuchBookError, ParseError};
 
 use super::book::BibleBook;
 use super::chapterandverse::ChapterAndVerse;
-use super::chapterandverserange::{ChapterAndVerseRange, FullOrImplicitRange};
+use super::chapterandverserange::ChapterAndVerseRange;
 use super::verse::BibleVerse;
 
 #[allow(dead_code)]
@@ -16,30 +19,7 @@ pub struct BibleVerseRange {
 #[allow(dead_code)]
 impl BibleVerseRange {
     pub fn parse(text: &str) -> Option<Self> {
-        match BibleBook::parse(&text) {
-            None => None,
-            Some(book) => match text.find(" ") {
-                None => None,
-                Some(pos) => {
-                    let remain = &text[pos + 1..];
-                    match ChapterAndVerseRange::parse(remain) {
-                        None => None,
-                        Some(FullOrImplicitRange::Full(cvr)) => match cvr.0.is_empty() {
-                            true => None,
-                            false => Some(BibleVerseRange { book, range: cvr.0 }),
-                        },
-                        Some(FullOrImplicitRange::Implicit(cvr)) => match book.number_of_chapters()
-                        {
-                            1 => match cvr.0.is_empty() {
-                                true => None,
-                                false => Some(BibleVerseRange { book, range: cvr.0 }),
-                            },
-                            _ => None,
-                        },
-                    }
-                }
-            },
-        }
+        text.parse().ok()
     }
 
     pub fn contains(&self, verse: &BibleVerse) -> bool {
@@ -63,13 +43,8 @@ impl BibleVerseRange {
     ) -> Self {
         BibleVerseRange {
             book,
-            range: ChapterAndVerse {
-                chapter: start_chapter,
-                verse: start_verse,
-            }..=ChapterAndVerse {
-                chapter: end_chapter,
-                verse: end_verse,
-            },
+            range: ChapterAndVerse::new(start_chapter, start_verse)
+                ..=ChapterAndVerse::new(end_chapter, end_verse),
         }
     }
 }
@@ -97,9 +72,9 @@ impl Display for BibleVerseRange {
 }
 
 impl TryFrom<&str> for BibleVerseRange {
-    type Error = ();
+    type Error = ParseError;
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        BibleVerseRange::parse(value).ok_or(())
+        value.parse()
     }
 }
 
@@ -107,13 +82,45 @@ impl From<BibleVerse> for BibleVerseRange {
     fn from(value: BibleVerse) -> Self {
         BibleVerseRange {
             book: value.book,
-            range: ChapterAndVerse {
-                chapter: value.chapter,
-                verse: value.verse,
-            }..=ChapterAndVerse {
-                chapter: value.chapter,
-                verse: value.verse,
-            },
+            range: ChapterAndVerse::new(value.chapter, value.verse)
+                ..=ChapterAndVerse::new(value.chapter, value.verse),
+        }
+    }
+}
+
+impl FromStr for BibleVerseRange {
+    type Err = ParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let book = BibleBook::parse_abbrev(s)
+            .ok_or_else(|| NoSuchBookError::new("No matching abbreviation".to_string()))?;
+        match s.find(" ") {
+            None => Err(NoChapterSpecified::new("No chapter/verse specified.".to_string()).into()),
+            Some(pos) => {
+                let remain = &s[pos + 1..];
+                match ChapterAndVerseRange::from_str(remain) {
+                    Ok(cvr) => match cvr.0.is_empty() {
+                        true => Err(InvalidRange::new("End verse before start".to_string()).into()),
+                        false => Ok(BibleVerseRange { book, range: cvr.0 }),
+                    },
+                    Err(ParseError::ImplicitRange(e)) => {
+                        let cvr = e.data();
+                        match book.number_of_chapters() {
+                            1 => match cvr.0.is_empty() {
+                                true => {
+                                    Err(InvalidRange::new("End verse before start".to_string())
+                                        .into())
+                                }
+                                false => Ok(BibleVerseRange { book, range: cvr.0 }),
+                            },
+                            _ => Err(NoChapterSpecified::new(
+                                "Chapter can only be ommited for single-chapter books".to_string(),
+                            )
+                            .into()),
+                        }
+                    }
+                    Err(e) => Err(e),
+                }
+            }
         }
     }
 }

@@ -315,10 +315,7 @@ impl TryFrom<u8> for BibleBook {
 impl TryFrom<&str> for BibleBook {
     type Error = NoSuchBookError;
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match Self::parse(value) {
-            Some(book) => Ok(book),
-            None => Err(NoSuchBookError::new(value.to_string())),
-        }
+        value.parse()
     }
 }
 

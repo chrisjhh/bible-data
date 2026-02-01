@@ -2,7 +2,7 @@ use crate::structs::errors::{ImplicitRange, InvalidFormat};
 
 use super::chapterandverse::ChapterAndVerse;
 use super::chapterandverseorverse::ChapterAndVerseOrVerse;
-use super::errors::ParseChapterVeseRangeError;
+use super::errors::ParseError;
 use std::ops::RangeInclusive;
 use std::str::FromStr;
 
@@ -29,23 +29,19 @@ impl ChapterAndVerseRange {
     pub fn parse(text: &str) -> Option<FullOrImplicitRange> {
         match ChapterAndVerseRange::from_str(text) {
             Ok(cvr) => Some(FullOrImplicitRange::Full(cvr)),
-            Err(ParseChapterVeseRangeError::ImplicitRange(ImplicitRange { data })) => {
-                Some(FullOrImplicitRange::Implicit(data))
-            }
+            Err(ParseError::ImplicitRange(e)) => Some(FullOrImplicitRange::Implicit(e.data())),
             Err(_) => None,
         }
     }
 }
 
 impl FromStr for ChapterAndVerseRange {
-    type Err = ParseChapterVeseRangeError;
+    type Err = ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.find("-") {
             None => {
                 // Single verse range
-                match ChapterAndVerseOrVerse::from_str(s)
-                    .map_err(|e| e.inner_into::<ParseChapterVeseRangeError>())?
-                {
+                match ChapterAndVerseOrVerse::from_str(s)? {
                     ChapterAndVerseOrVerse::Both(cv) => {
                         Ok(ChapterAndVerseRange(cv.clone()..=cv.clone()))
                     }
@@ -60,10 +56,8 @@ impl FromStr for ChapterAndVerseRange {
             Some(pos) => {
                 let start = &s[..pos];
                 let end = &s[pos + 1..];
-                let cvv_start = ChapterAndVerseOrVerse::from_str(start)
-                    .map_err(|e| e.inner_into::<ParseChapterVeseRangeError>())?;
-                let cvv_end = ChapterAndVerseOrVerse::from_str(end)
-                    .map_err(|e| e.inner_into::<ParseChapterVeseRangeError>())?;
+                let cvv_start = ChapterAndVerseOrVerse::from_str(start)?;
+                let cvv_end = ChapterAndVerseOrVerse::from_str(end)?;
                 let mut implicit = false;
                 let cv_start = match cvv_start {
                     ChapterAndVerseOrVerse::Both(cv) => cv,

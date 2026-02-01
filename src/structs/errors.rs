@@ -27,7 +27,7 @@ macro_rules! create_error {
         #[allow(dead_code)]
         #[derive(Debug, Clone)]
         pub struct $error_name {
-            pub data: $data_type,
+            data: $data_type,
         }
         impl Display for $error_name {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -40,6 +40,10 @@ macro_rules! create_error {
         impl $error_name {
             pub fn new(data: $data_type) -> Self {
                 $error_name { data }
+            }
+
+            pub fn data(self) -> $data_type {
+                self.data
             }
         }
     };
@@ -64,16 +68,6 @@ macro_rules! create_error {
                 }
             }
         )+
-        impl $error_type {
-             #[allow(dead_code)]
-            pub fn inner_into<T>(&self) -> T
-            where T: $(From<$sub_type> +)+
-            {
-                match self {
-                    $($error_type::$sub_type(e) => (*e).clone().into()),+
-                }
-            }
-        }
     }
 }
 
@@ -83,8 +77,7 @@ create_error!(NoChapterSpecified);
 create_error!(NotANumber);
 create_error!(ChapterOutOfRange);
 create_error!(InvalidFormat);
+create_error!(InvalidRange);
 create_error!(ImplicitRange<ChapterAndVerseRange>);
 
-create_error!(ParseChapterError : NoSuchBookError, NoChapterSpecified, NotANumber, ChapterOutOfRange);
-create_error!(ParseChapterVeseError: NotANumber, InvalidFormat);
-create_error!(ParseChapterVeseRangeError: NotANumber, InvalidFormat, ImplicitRange);
+create_error!(ParseError : NoSuchBookError, NoChapterSpecified, NotANumber, ChapterOutOfRange, InvalidFormat, ImplicitRange, InvalidRange);

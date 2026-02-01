@@ -1,4 +1,4 @@
-use super::errors::{InvalidFormat, NotANumber, ParseChapterVeseError};
+use super::errors::{InvalidFormat, NotANumber, ParseError};
 use std::cmp::Ordering;
 use std::{fmt::Display, str::FromStr};
 
@@ -43,7 +43,7 @@ impl ChapterAndVerse {
 }
 
 impl FromStr for ChapterAndVerse {
-    type Err = ParseChapterVeseError;
+    type Err = ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.find(":") {
             None => {

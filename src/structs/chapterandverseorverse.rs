@@ -1,7 +1,7 @@
 use crate::structs::errors::NotANumber;
 
 use super::chapterandverse::ChapterAndVerse;
-use super::errors::ParseChapterVeseError;
+use super::errors::ParseError;
 use std::str::FromStr;
 
 #[allow(dead_code)]
@@ -19,7 +19,7 @@ impl ChapterAndVerseOrVerse {
 }
 
 impl FromStr for ChapterAndVerseOrVerse {
-    type Err = ParseChapterVeseError;
+    type Err = ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.find(":") {
             None => u8::from_str(s)

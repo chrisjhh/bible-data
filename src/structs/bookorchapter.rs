@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use super::book::BibleBook;
 use super::chapter::BibleChapter;
-use super::errors::ParseChapterError;
+use super::errors::ParseError;
 
 #[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq)]
@@ -32,12 +32,12 @@ impl BibleBookOrChapter {
 }
 
 impl FromStr for BibleBookOrChapter {
-    type Err = ParseChapterError;
+    type Err = ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.find(" ") {
             None => BibleBook::from_str(s)
                 .map(BibleBookOrChapter::Book)
-                .map_err(ParseChapterError::NoSuchBookError),
+                .map_err(ParseError::NoSuchBookError),
             Some(_) => BibleChapter::from_str(s).map(BibleBookOrChapter::Chapter),
         }
     }

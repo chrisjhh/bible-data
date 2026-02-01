@@ -1,8 +1,11 @@
 use std::fmt::Display;
+use std::str::FromStr;
+
+use crate::structs::errors::{NoChapterSpecified, NoSuchBookError};
 
 use super::book::BibleBook;
 use super::chapterandverseorverse::ChapterAndVerseOrVerse;
-use crate::parse_book_abbrev;
+use super::errors::ParseError;
 
 #[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq)]
@@ -41,44 +44,7 @@ impl Ord for BibleVerse {
 #[allow(dead_code)]
 impl BibleVerse {
     pub fn parse(text: &str) -> Option<Self> {
-        // Start by attempting to parse the book from the abbrev at the start of the text
-        // as this is very quick
-        match parse_book_abbrev(text) {
-            None => None,
-            Some(index) => {
-                let book = BibleBook::from_index(index)
-                    .expect("Result of parse_book_abbrev should be in range");
-                // Result of parse_book_abbrev ends with end of string or space character
-                // We can find rest of string (if any) by looking for the first space character
-                match text.find(" ") {
-                    None => None, // There is no chapter/verse specified
-                    Some(pos) => {
-                        let remain = &text[pos + 1..];
-                        match ChapterAndVerseOrVerse::parse(remain) {
-                            None => None,
-                            Some(ChapterAndVerseOrVerse::JustVerse(verse)) => {
-                                // No chapter
-                                // This is invalid, unless the book only has one chapter
-                                // In which case, chapter one is implicit
-                                match book.number_of_chapters() {
-                                    1 => Some(BibleVerse {
-                                        book,
-                                        chapter: 1,
-                                        verse,
-                                    }),
-                                    _ => None,
-                                }
-                            }
-                            Some(ChapterAndVerseOrVerse::Both(cv)) => Some(BibleVerse {
-                                book,
-                                chapter: cv.chapter,
-                                verse: cv.verse,
-                            }),
-                        }
-                    }
-                }
-            }
-        }
+        text.parse().ok()
     }
 
     pub fn new(book: BibleBook, chapter: u8, verse: u8) -> Self {
@@ -91,9 +57,50 @@ impl BibleVerse {
 }
 
 impl TryFrom<&str> for BibleVerse {
-    type Error = ();
+    type Error = ParseError;
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        BibleVerse::parse(value).ok_or(())
+        value.parse()
+    }
+}
+
+impl FromStr for BibleVerse {
+    type Err = ParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // Start by attempting to parse the book from the abbrev at the start of the text
+        // as this is very quick
+        let book = BibleBook::parse_abbrev(s)
+            .ok_or_else(|| NoSuchBookError::new("No matching abbreviation".to_string()))?;
+        // Result of parse_book_abbrev ends with end of string or space character
+        // We can find rest of string (if any) by looking for the first space character
+        match s.find(" ") {
+            None => Err(NoChapterSpecified::new("No chapter/verse specified.".to_string()).into()), // There is no chapter/verse specified
+            Some(pos) => {
+                let remain = &s[pos + 1..];
+                match ChapterAndVerseOrVerse::from_str(remain)? {
+                    ChapterAndVerseOrVerse::JustVerse(verse) => {
+                        // No chapter
+                        // This is invalid, unless the book only has one chapter
+                        // In which case, chapter one is implicit
+                        match book.number_of_chapters() {
+                            1 => Ok(BibleVerse {
+                                book,
+                                chapter: 1,
+                                verse,
+                            }),
+                            _ => Err(NoChapterSpecified::new(
+                                "Chapter can only be ommited for single-chapter books".to_string(),
+                            )
+                            .into()),
+                        }
+                    }
+                    ChapterAndVerseOrVerse::Both(cv) => Ok(BibleVerse {
+                        book,
+                        chapter: cv.chapter,
+                        verse: cv.verse,
+                    }),
+                }
+            }
+        }
     }
 }
 
